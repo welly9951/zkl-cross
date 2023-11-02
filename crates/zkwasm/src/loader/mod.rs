@@ -38,6 +38,7 @@ use crate::runtime::CompiledImage;
 use crate::runtime::ExecutionResult;
 use crate::runtime::WasmInterpreter;
 use anyhow::anyhow;
+use crate::runtime::dummy::dummy::Dummy;
 
 mod err;
 
@@ -62,6 +63,7 @@ pub struct ZkWasmLoader<E: MultiMillerLoop> {
     k: u32,
     module: wasmi::Module,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     _data: PhantomData<E>,
 }
 
@@ -97,7 +99,14 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
     }
 
     fn compile(&self, env: &HostEnv) -> Result<CompiledImage<NotStartedModuleRef<'_>, Tracer>> {
-        let imports = ImportsBuilder::new().with_resolver("env", env);
+        let dummy = Dummy::new();
+
+        let mut imports = ImportsBuilder::new()
+            .with_resolver("env", env);
+
+        for m in self.ignore_modules.iter() {
+            imports = imports.with_resolver(m, &dummy);
+        }
 
         WasmInterpreter::compile(
             &self.module,
@@ -129,7 +138,7 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
         Ok(builder.build_circuit::<E::Scalar>())
     }
 
-    pub fn new(k: u32, image: Vec<u8>, phantom_functions: Vec<String>) -> Result<Self> {
+    pub fn new(k: u32, image: Vec<u8>, phantom_functions: Vec<String>, ignore_modules: Vec<String>) -> Result<Self> {
         set_zkwasm_k(k);
 
         let module = wasmi::Module::from_buffer(&image)?;
@@ -138,6 +147,7 @@ impl<E: MultiMillerLoop> ZkWasmLoader<E> {
             k,
             module,
             phantom_functions,
+            ignore_modules,
             _data: PhantomData,
         };
 

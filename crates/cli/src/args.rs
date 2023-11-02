@@ -111,6 +111,24 @@ pub trait ArgBuilder {
             .collect()
     }
 
+    fn ignore_module_arg<'a>() -> Arg<'a> {
+        Arg::new("ignore-module")
+            .long("ignore-module")
+            .value_parser(value_parser!(String))
+            .action(ArgAction::Append)
+            .help("Specify module to ignore")
+            .min_values(0)
+    }
+
+    fn parse_ignore_module(matches: &ArgMatches) -> Vec<String> {
+        matches
+            .get_many("ignore-module")
+            .unwrap_or_default()
+            .into_iter()
+            .map(|s: &String| s.to_owned())
+            .collect()
+    }
+
     fn output_path_arg<'a>() -> Arg<'a> {
         arg!(
             -o --output [OUTPUT_PATH] "Path of the output files.\nThe md5 of the wasm binary file is the default path if not supplied."

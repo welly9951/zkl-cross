@@ -47,6 +47,7 @@ pub fn exec_setup(
     prefix: &'static str,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     output_dir: &PathBuf,
 ) -> Result<()> {
     info!("Setup Params and VerifyingKey");
@@ -76,7 +77,7 @@ pub fn exec_setup(
             info!("Found Verifying at {:?}", vk_path);
         } else {
             info!("Create Verifying to {:?}", vk_path);
-            let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions)?;
+            let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions, ignore_modules)?;
 
             let vkey = loader.create_vkey(&params)?;
 
@@ -92,9 +93,10 @@ pub fn exec_image_checksum(
     zkwasm_k: u32,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     output_dir: &PathBuf,
 ) -> Result<()> {
-    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions)?;
+    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions, ignore_modules)?;
 
     let params = load_or_build_unsafe_params::<Bn256>(
         zkwasm_k,
@@ -119,6 +121,7 @@ pub fn exec_dry_run_service(
     zkwasm_k: u32,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     listen: &PathBuf,
 ) -> Result<()> {
     use notify::event::AccessKind;
@@ -176,6 +179,7 @@ pub fn exec_dry_run_service(
                                 zkwasm_k,
                                 wasm_binary.clone(),
                                 phantom_functions.clone(),
+                                ignore_modules.clone(),
                             )
                             .unwrap();
 
@@ -227,12 +231,13 @@ pub fn exec_dry_run(
     zkwasm_k: u32,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     public_inputs: Vec<u64>,
     private_inputs: Vec<u64>,
     context_inputs: Vec<u64>,
     context_outputs: Arc<Mutex<Vec<u64>>>,
 ) -> Result<()> {
-    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions)?;
+    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions, ignore_modules)?;
 
     loader.dry_run(ExecutionArg {
         public_inputs,
@@ -249,13 +254,14 @@ pub fn exec_create_proof(
     zkwasm_k: u32,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     output_dir: &PathBuf,
     public_inputs: Vec<u64>,
     private_inputs: Vec<u64>,
     context_inputs: Vec<u64>,
     context_outputs: Arc<Mutex<Vec<u64>>>,
 ) -> Result<()> {
-    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions)?;
+    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions, ignore_modules)?;
 
     let params = load_or_build_unsafe_params::<Bn256>(
         zkwasm_k,
@@ -306,6 +312,7 @@ pub fn exec_verify_proof(
     zkwasm_k: u32,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     output_dir: &PathBuf,
     proof_path: &PathBuf,
     instance_path: &PathBuf,
@@ -324,7 +331,7 @@ pub fn exec_verify_proof(
         Some(&output_dir.join(format!("K{}.params", zkwasm_k))),
     );
 
-    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions)?;
+    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions, ignore_modules)?;
 
     let vkey = load_vkey::<Bn256, TestCircuit<_>>(
         &params,
@@ -346,6 +353,7 @@ pub fn exec_aggregate_create_proof(
     prefix: &'static str,
     wasm_binary: Vec<u8>,
     phantom_functions: Vec<String>,
+    ignore_modules: Vec<String>,
     output_dir: &PathBuf,
     public_inputs: Vec<Vec<u64>>,
     private_inputs: Vec<Vec<u64>>,
@@ -354,7 +362,7 @@ pub fn exec_aggregate_create_proof(
 ) -> Result<()> {
     assert_eq!(public_inputs.len(), private_inputs.len());
 
-    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions)?;
+    let loader = ZkWasmLoader::<Bn256>::new(zkwasm_k, wasm_binary, phantom_functions, ignore_modules)?;
 
     let (circuits, instances) = public_inputs
         .into_iter()

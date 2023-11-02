@@ -67,6 +67,7 @@ pub trait AppBuilder: CommandBuilder {
             .arg(Self::output_path_arg())
             .arg(Self::function_name_arg())
             .arg(Self::phantom_functions_arg())
+            .arg(Self::ignore_module_arg())
             .arg(Self::zkwasm_file_arg());
 
         let app = Self::append_setup_subcommand(app);
@@ -97,6 +98,8 @@ pub trait AppBuilder: CommandBuilder {
         let md5 = format!("{:X}", md5::compute(&wasm_binary));
         let phantom_functions = Self::parse_phantom_functions(&top_matches);
 
+        let ignore_modules = Self::parse_ignore_module(&top_matches);
+
         let output_dir =
             load_or_generate_output_path(&md5, top_matches.get_one::<PathBuf>("output"));
         fs::create_dir_all(&output_dir)?;
@@ -108,10 +111,11 @@ pub trait AppBuilder: CommandBuilder {
                 Self::NAME,
                 wasm_binary,
                 phantom_functions,
+                ignore_modules,
                 &output_dir,
             ),
             Some(("checksum", _)) => {
-                exec_image_checksum(zkwasm_k, wasm_binary, phantom_functions, &output_dir)
+                exec_image_checksum(zkwasm_k, wasm_binary, phantom_functions, ignore_modules, &output_dir)
             }
             Some(("dry-run", sub_matches)) => {
                 let public_inputs: Vec<u64> = Self::parse_single_public_arg(&sub_matches);
@@ -130,7 +134,7 @@ pub trait AppBuilder: CommandBuilder {
                         warn!("All context paths are ignored when dry-run is running in service mode.");
                     }
 
-                    exec_dry_run_service(zkwasm_k, wasm_binary, phantom_functions, &listen)
+                    exec_dry_run_service(zkwasm_k, wasm_binary, phantom_functions, ignore_modules, &listen)
                 } else {
                     assert!(public_inputs.len() <= Self::MAX_PUBLIC_INPUT_SIZE);
 
@@ -140,6 +144,7 @@ pub trait AppBuilder: CommandBuilder {
                         zkwasm_k,
                         wasm_binary,
                         phantom_functions,
+                        ignore_modules,
                         public_inputs,
                         private_inputs,
                         context_in,
@@ -167,6 +172,7 @@ pub trait AppBuilder: CommandBuilder {
                     zkwasm_k,
                     wasm_binary,
                     phantom_functions,
+                    ignore_modules,
                     &output_dir,
                     public_inputs,
                     private_inputs,
@@ -187,6 +193,7 @@ pub trait AppBuilder: CommandBuilder {
                     zkwasm_k,
                     wasm_binary,
                     phantom_functions,
+                    ignore_modules,
                     &output_dir,
                     &proof_path,
                     &instance_path,
@@ -215,6 +222,7 @@ pub trait AppBuilder: CommandBuilder {
                     Self::NAME,
                     wasm_binary,
                     phantom_functions,
+                    ignore_modules,
                     &output_dir,
                     public_inputs,
                     private_inputs,
